@@ -2,47 +2,42 @@ name: Azure Static Web Apps CI/CD
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - master
   pull_request:
-    types: [ opened, synchronize, reopened, closed ]
-    branches: [ main ]
+    types: [opened, synchronize, reopened, closed]
+    branches:
+      - main
+      - master
 
 jobs:
   build_and_deploy_job:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
     name: Build and Deploy Job
-
     steps:
       - uses: actions/checkout@v4
-
-      # Pin Node 18 (avoids npm 10.9.x issue). No cache input -> no lockfile check.
-      - name: Use Node 18
-        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          submodules: true
+          lfs: false
 
-      # Install & build your Vite app (produces dist/)
-      - name: Install dependencies
-        run: npm ci || npm install
-      - name: Build
-        run: npm run build
+      # Remove Node.js setup if not needed
+      # - name: Setup Node.js environment
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version: '18.20.8'
+      #     cache: 'npm'  # This is causing the error
+      #     cache-dependency-path: '**/package-lock.json'
 
-      # Upload prebuilt files in dist/ (no build on the action side)
-      - name: Deploy to Azure Static Web Apps
+      - name: Build And Deploy
+        id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_LEMON_DUNE_0DDB69610 }}
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
-          app_location: "dist"   # upload the built assets
-          output_location: ""    # skip build in the action
-          repo_token: ${{ secrets.GITHUB_TOKEN }}  # enables PR comments/status
-
-  close_pull_request_job:
-    if: github.event_name == 'pull_request' && github.event.action == 'closed'
-    runs-on: ubuntu-latest
-    name: Close Pull Request Job
-    steps:
-      - uses: Azure/static-web-apps-deploy@v1
-        with:
-          action: "close"
+          app_location: "/" # App source code path
+          api_location: "api" # Api source code path - optional
+          output_location: "docs" # Point to your documentation
+          skip_app_build: true
