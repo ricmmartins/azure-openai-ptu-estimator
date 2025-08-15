@@ -183,7 +183,7 @@ az login
 az staticwebapp create \
   --name azure-openai-ptu-estimator \
   --resource-group your-resource-group \
-  --source https://github.com/your-username/azure-openai-ptu-estimator \
+  --source https://github.com/ricmmartins/azure-openai-ptu-estimator \
   --location "East US 2" \
   --branch main \
   --app-location "/" \
