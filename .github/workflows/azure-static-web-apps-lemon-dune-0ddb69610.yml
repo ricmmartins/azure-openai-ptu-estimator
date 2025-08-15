@@ -4,41 +4,44 @@ on:
   push:
     branches: [ main ]
   pull_request:
-    types: [opened, synchronize, reopened, closed]
+    types: [ opened, synchronize, reopened, closed ]
     branches: [ main ]
 
 jobs:
   build_and_deploy_job:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
+    name: Build and Deploy Job
 
     steps:
       - uses: actions/checkout@v4
 
-      # No caching here
+      # Pin Node 18 (avoids npm 10.9.x issue). No cache input -> no lockfile check.
       - name: Use Node 18
         uses: actions/setup-node@v4
         with:
           node-version: '18'
 
-      # Install & build (create dist/)
-      - name: Install deps
+      # Install & build your Vite app (produces dist/)
+      - name: Install dependencies
         run: npm ci || npm install
       - name: Build
         run: npm run build
 
-      # Upload prebuilt files (no build, no npm)
+      # Upload prebuilt files in dist/ (no build on the action side)
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_LEMON_DUNE_0DDB69610 }}
           action: "upload"
-          app_location: "dist"
-          output_location: ""   # important: skip build step
+          app_location: "dist"   # upload the built assets
+          output_location: ""    # skip build in the action
+          repo_token: ${{ secrets.GITHUB_TOKEN }}  # enables PR comments/status
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
+    name: Close Pull Request Job
     steps:
       - uses: Azure/static-web-apps-deploy@v1
         with:
